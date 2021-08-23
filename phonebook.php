@@ -3,17 +3,32 @@
 	<head>
 		<title>Phonebook</title>
 		<style>
-		/* Remove bullets from <li>, move each number a little bit to the right*/
-		li{
+		/* remove annoying selection highlights */
+		::selection {
+			background: none;
+		}
 
-			list-style-type: none;
+		/* Make placeholder in texboxes look like values. We don't want to set the numbers as values becuase the values will be the updated numbers. This is a little trick to make my life easier.*/
+		::placeholder{
+			opacity: 100%;
+			font-family: sans-serif;
+	
+		}
+
+		/* make textbox invisible*/
+		.number{
+			font-family: sans-serif;
+			border: hidden;
+			outline: none;
+			width: 225px;
 			line-height:0%;
 			padding: 7px;
+			background-color: #ebebeb;
 
 		}
 
 		/* When hover, change color to a darker grey*/		
-		li:hover {
+		.number:hover {
 		  background-color: #dbdbdb;
 
 		}
@@ -29,6 +44,7 @@
 		}
 		
 		body {
+			background-color: white;
 		    display: table-cell;
 		    vertical-align: middle;
 		    font-family: sans-serif;
@@ -50,7 +66,7 @@
 		}
 
 		/* Hide the default text input border and highliting. Also change the width of the text box*/
-		input {
+		.numinput {
 			border: hidden;
 			outline: none;
 			width: 225px;
@@ -63,26 +79,37 @@
 			margin: 10px;
 
 		}
-		
-		</style>
-	</head>
 
+		
+				
+		</style>
+		 <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  		 <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+		  <script>
+		  $(function(){
+		    $("#draggable").draggable();
+		  });
+		  </script>
+	</head>
+	
 	<body>
-		<div class='div1'>
+	
+
+ 
+		<div class='div1' id="draggable">
 			<h2>PhoneBook</h2>	
 			<!-- Form to send a post request to this php file -->
 			<form name="phonebook" action="phonebook.php" method="POST" id="phonebook">
-				<input type="text" max="10" name="number" value="">
+				<input class="numinput" type="text" max="10" name="number" value="">
 				<!-- hidden input we will use to delete a number -->
 				<input type="hidden" name="delnum" value=""/>
 				<br />
 				<br />
-				<button type="submit">Submit</button>
+				<button type="submit">Add</button>
 				<button type="submit" name="delete_all" value="true">Delete All</button>
 			</form>	
-	</body>
-
-</html>
+			<form action='phonebook.php' method='POST'>
+	
 
 <?php
 
@@ -95,12 +122,12 @@ $result = mysqli_query($connect, $sql);
 //get number of rows in the phonebook table
 $checkResult = mysqli_num_rows($result);
 
-//if our table isn't empty, loop through every row and echo results
+//if our table isn't empty, loop through every row and render results
 if($checkResult > 0){
 	while($row = mysqli_fetch_assoc($result)){
-		//echo number as a list. When the user clicks, we will set the number ID as value to the delnum input and submit it as a post request.
-		//TL;DR Give delnum the row ID so we can identify each number. Useful for deleting numbers
-		echo "<li onclick=\"document.phonebook.delnum.value='".$row['id']."';document.getElementById('phonebook').submit();\">".$row['numbers']."</li><br/>";
+		//echo number as a text input, because we will use this to edit each number. When the user clicks, we will set the number ID as value to the delnum input and submit it as a post request.
+		//TL;DR Give delnum the row ID so we can identify each number. Useful for deleting and editing numbers
+		echo "<input name='edit_num[\"".$row['id']."\"]' class='number' type='text' ondblclick=\"document.phonebook.delnum.value='".$row['id']."';document.getElementById('phonebook').submit();\" placeholder='".$row['numbers']."'/><br/>";
 		
 	}
 }
@@ -112,8 +139,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 		$number = $_POST['number'];
 		//Generate a random ID
 		$id = rand();
-		echo "<li>$number</li>";
-		//Inser number and ID to database
+		//Insert number and ID to database
 		$sql = "INSERT INTO phonebook (numbers, id) VALUES ($number, $id)";
 		mysqli_query($connect, $sql);
 		//Refresh page
@@ -136,6 +162,20 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 		//refresh page
 		header("Location: phonebook.php");
 	}
+
+	/* looping through the dictionary when a user tried to update a value*/
+	foreach($_POST['edit_num'] as $id => $new_num){
+			#check for updated number
+			if ($new_num){
+				#sql statement to update the number by id
+				$sql = "UPDATE phonebook SET numbers = ".$new_num." WHERE id = ".$id;
+				mysqli_query($connect, $sql);
+				#refresh page
+				header("Location: phonebook.php");
+
+			}
+			
+		}
 	
 }
 
@@ -143,5 +183,11 @@ if($_SERVER['REQUEST_METHOD'] == 'POST'){
 mysqli_close($connect);
 
 ?>
-<!-- end div -->
+<!-- end html -->
+<button type="submit" hidden></button>
+</form>
 </div>
+
+</body>
+
+</html>
